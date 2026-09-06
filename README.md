@@ -20,3 +20,33 @@ The repository is structured as a monorepo containing both the backend service a
 └── url-shortener/       # Backend REST API (Express + CJS)
     ├── index.js         # Server, routes, validation middleware, and data store
     └── package.json
+⚡ Tech Stack
+Backend: Node.js, Express, CommonJS (require)
+
+Validation: Zod (runtime request schema enforcement)
+
+Utilities: Node.js native crypto (secure random byte generation)
+
+Frontend: React 18, Vite
+
+Networking: Fetch API, CORS middleware
+
+🚀 Features
+Link Shortening: Accepts target URLs and returns base64url-encoded 6-character aliases.
+
+Fail-Fast Validation: Zod middleware inspects request payloads and returns detailed error maps on malformed input (HTTP 400).
+
+HTTP 302 Redirections: Direct browser redirection from short link paths (/:code) to destination addresses.
+
+Click Analytics: Records and exposes total click volume and timestamps per generated alias.
+
+Reactive UI: Instant feedback for errors, clickable short link previews, and dedicated stats inspection panels.
+📌 Planned Enhancements
+[ ] Replace the in-memory Map with persistent storage using SQLite (better-sqlite3).
+
+[ ] Add rate limiting via express-rate-limit to prevent denial-of-service abuse.
+
+[ ] Implement custom user-defined alias support.
+
+[ ] Refactor backend structure into standard MVC layers (Controllers, Services, Models).
+
