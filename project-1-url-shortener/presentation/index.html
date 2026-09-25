@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Shortener — Interactive Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0c0d11;
+      --bg-card: rgba(26, 28, 36, 0.75);
+      --bg-card-hover: rgba(36, 39, 51, 0.85);
+      --border-color: rgba(255, 45, 117, 0.18);
+      --pink-primary: #ff2d75;
+      --pink-glow: rgba(255, 45, 117, 0.4);
+      --pink-subtle: rgba(255, 45, 117, 0.12);
+      --pink-light: #ff75a0;
+      --grey-text: #9ca3af;
+      --text-main: #f9fafb;
+      --transition-speed: 0.65s;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .ambient-bg {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 80% 20%, rgba(255, 45, 117, 0.14) 0%, transparent 40%),
+        radial-gradient(circle at 20% 80%, rgba(255, 45, 117, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(24, 26, 34, 0.9) 0%, #0c0d11 100%);
+    }
+
+    header.deck-header {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 72px;
+      padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(12, 13, 17, 0.7);
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--pink-primary), #ff758c);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: #fff;
+      box-shadow: 0 0 16px var(--pink-glow);
+    }
+
+    .brand-title { font-weight: 700; font-size: 1.15rem; }
+    .brand-subtitle {
+      font-size: 0.8rem; color: var(--pink-light);
+      margin-left: 4px; padding: 2px 8px;
+      background: var(--pink-subtle); border-radius: 12px;
+      border: 1px solid rgba(255, 45, 117, 0.25);
+    }
+
+    .controls-wrapper { display: flex; align-items: center; gap: 16px; }
+    .mode-selector {
+      display: flex; background: rgba(28, 30, 40, 0.8);
+      border: 1px solid rgba(255, 45, 117, 0.25);
+      border-radius: 30px; padding: 4px; gap: 4px;
+    }
+    .mode-btn {
+      background: transparent; border: none; color: var(--grey-text);
+      font-family: inherit; font-size: 0.82rem; font-weight: 600;
+      padding: 6px 14px; border-radius: 20px; cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .mode-btn.active {
+      background: var(--pink-primary); color: #fff;
+      box-shadow: 0 0 12px var(--pink-glow);
+    }
+
+    .deck-viewport {
+      position: absolute; top: 72px; bottom: 72px; left: 0; right: 0;
+      perspective: 1600px; overflow: hidden; z-index: 10;
+    }
+
+    .slide {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      padding: 36px 64px; display: flex; flex-direction: column; justify-content: center;
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transform-style: preserve-3d;
+      transition: all var(--transition-speed) cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .slide.active {
+      opacity: 1; visibility: visible; pointer-events: all;
+      transform: translate3d(0, 0, 0); z-index: 20;
+    }
+
+    .mode-left .slide.prev { transform: translateX(-110%) rotateY(45deg); opacity: 0; }
+    .mode-left .slide.next { transform: translateX(110%) rotateY(-45deg); opacity: 0; }
+    .mode-top .slide.prev { transform: translateY(-110%) rotateX(-45deg); opacity: 0; }
+    .mode-top .slide.next { transform: translateY(110%) rotateX(45deg); opacity: 0; }
+    .mode-live .slide.prev { transform: translate3d(-80%, 0, -400px) rotateY(55deg); opacity: 0; filter: blur(8px); }
+    .mode-live .slide.next { transform: translate3d(80%, 0, -400px) rotateY(-55deg); opacity: 0; filter: blur(8px); }
+
+    .badge-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px;
+      background: var(--pink-subtle); border: 1px solid var(--border-color);
+      color: var(--pink-light); border-radius: 20px; font-size: 0.8rem;
+      font-weight: 600; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .slide-title {
+      font-size: 2.75rem; font-weight: 800; line-height: 1.15;
+      background: linear-gradient(135deg, #ffffff 30%, var(--pink-light) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .slide-desc { font-size: 1.1rem; color: var(--grey-text); max-width: 800px; margin-top: 6px; }
+
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 16px; }
+    .glass-card {
+      background: var(--bg-card); border: 1px solid var(--border-color);
+      border-radius: 16px; padding: 24px; backdrop-filter: blur(12px);
+    }
+    .code-box {
+      background: #090a0d; border: 1px solid rgba(255, 45, 117, 0.2);
+      border-radius: 12px; padding: 16px; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.86rem; color: #e2e8f0; margin-top: 12px;
+    }
+
+    footer.deck-footer {
+      position: absolute; bottom: 0; left: 0; width: 100%; height: 72px;
+      padding: 0 32px; display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--border-color); background: rgba(12, 13, 17, 0.7);
+    }
+    .slide-dots { display: flex; gap: 8px; }
+    .dot {
+      width: 10px; height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.2);
+      cursor: pointer; transition: all 0.3s ease;
+    }
+    .dot.active { width: 28px; background: var(--pink-primary); box-shadow: 0 0 10px var(--pink-glow); }
+    .nav-arrow-btn {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: rgba(28, 30, 40, 0.8); border: 1px solid rgba(255, 45, 117, 0.25);
+      color: #fff; cursor: pointer; font-size: 1.1rem;
+    }
+    .nav-arrow-btn:hover { background: var(--pink-primary); }
+    .btn-pink {
+      background: linear-gradient(135deg, var(--pink-primary), #ff5c8a);
+      color: #fff; border: none; border-radius: 10px; padding: 10px 18px;
+      font-weight: 700; cursor: pointer;
+    }
+  </style>
+</head>
+<body class="mode-live">
+  <div class="ambient-bg"></div>
+
+  <header class="deck-header">
+    <div class="brand">
+      <div class="brand-icon">URL</div>
+      <div>
+        <span class="brand-title">Full-Stack URL Shortener</span>
+        <span class="brand-subtitle">Project 1 Deck</span>
+      </div>
+    </div>
+    <div class="controls-wrapper">
+      <div class="mode-selector">
+        <button class="mode-btn" data-mode="mode-left">👈 Left Turn</button>
+        <button class="mode-btn" data-mode="mode-top">👆 Top Flip</button>
+        <button class="mode-btn active" data-mode="mode-live">⚡ Live 3D</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="deck-viewport">
+    <!-- SLIDE 1 -->
+    <section class="slide active">
+      <div class="badge-pill">Backend Domination • Project 1</div>
+      <h1 class="slide-title" style="font-size: 3.5rem;">Full-Stack URL Shortener</h1>
+      <p class="slide-desc">High-throughput link redirection, cryptographically random alias generation, schema validation, and real-time click tracking.</p>
+      <div style="margin-top: 24px;">
+        <button class="btn-pink" onclick="nextSlide()">Start Overview →</button>
+      </div>
+    </section>
+
+    <!-- SLIDE 2 -->
+    <section class="slide next">
+      <div class="badge-pill">Architecture</div>
+      <h2 class="slide-title">System Architecture</h2>
+      <p class="slide-desc">Client-server decoupling with Express REST API and React 18 frontend.</p>
+      <div class="card-grid">
+        <div class="glass-card">
+          <h3 style="color: var(--pink-primary); margin-bottom: 8px;">Express REST API</h3>
+          <p class="slide-desc" style="font-size: 0.95rem;">Handles POST /shorten to generate aliases and GET /:code for HTTP 302 browser redirections.</p>
+        </div>
+        <div class="glass-card">
+          <h3 style="color: var(--pink-primary); margin-bottom: 8px;">Zod Validation</h3>
+          <p class="slide-desc" style="font-size: 0.95rem;">Fail-fast middleware validating inbound URL parameters before processing.</p>
+        </div>
+        <div class="glass-card">
+          <h3 style="color: var(--pink-primary); margin-bottom: 8px;">React 18 (Vite)</h3>
+          <p class="slide-desc" style="font-size: 0.95rem;">Real-time interactive dashboard displaying short links, copy-to-clipboard, and click analytics.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3 -->
+    <section class="slide next">
+      <div class="badge-pill">Quickstart</div>
+      <h2 class="slide-title">Run Project 1</h2>
+      <p class="slide-desc">Simple commands to start both client and server.</p>
+      <div class="code-box">
+# 1. Start Express Backend
+cd project-1-url-shortener/url-shortener
+npm install
+node index.js
+
+# 2. Start React Frontend
+cd project-1-url-shortener/client
+npm install
+npm run dev</div>
+      <div style="margin-top: 20px;">
+        <a href="https://github.com/One-Hat/Backend_Projects" target="_blank" class="btn-pink" style="text-decoration: none;">GitHub Repo ↗</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="deck-footer">
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;">Slide <span id="num">1</span> / 3</div>
+    <div class="slide-dots" id="dots"></div>
+    <div style="display: flex; gap: 8px;">
+      <button class="nav-arrow-btn" onclick="prevSlide()">←</button>
+      <button class="nav-arrow-btn" onclick="nextSlide()">→</button>
+    </div>
+  </footer>
+
+  <script>
+    let idx = 0;
+    const slides = document.querySelectorAll('.slide');
+    const total = slides.length;
+    const num = document.getElementById('num');
+    const dotsBox = document.getElementById('dots');
+
+    slides.forEach((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === 0 ? ' active' : '');
+      d.onclick = () => go(i);
+      dotsBox.appendChild(d);
+    });
+    const dots = document.querySelectorAll('.dot');
+
+    function update() {
+      slides.forEach((s, i) => {
+        s.className = 'slide ' + (i === idx ? 'active' : i < idx ? 'prev' : 'next');
+      });
+      dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+      num.textContent = idx + 1;
+    }
+
+    function nextSlide() { if (idx < total - 1) { idx++; update(); } }
+    function prevSlide() { if (idx > 0) { idx--; update(); } }
+    function go(i) { idx = i; update(); }
+
+    window.onkeydown = (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    };
+
+    document.querySelectorAll('.mode-btn').forEach(b => {
+      b.onclick = () => {
+        document.body.className = b.dataset.mode;
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        b.classList.add('active');
+      };
+    });
+  </script>
+</body>
+</html>
