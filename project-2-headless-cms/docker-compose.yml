@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: headless_cms_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: cms_user
+      POSTGRES_PASSWORD: cms_password
+      POSTGRES_DB: headless_cms
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cms_user -d headless_cms"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  cms-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: headless_cms_backend
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://cms_user:cms_password@postgres:5432/headless_cms?schema=public
+      JWT_SECRET: super_secret_jwt_key_for_dev_mode_change_in_production
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+
+volumes:
+  postgres_data:

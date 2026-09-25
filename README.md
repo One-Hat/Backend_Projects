@@ -1,52 +1,22 @@
-# 🔗 Full-Stack URL Shortener
+# 🚀 Backend Projects Portfolio
 
-A lightweight, full-stack URL shortening service built with a Node.js/Express backend and a React (Vite) frontend. The project implements runtime schema validation, in-memory data caching, analytics tracking, and cross-origin communication.
+A collection of production-grade backend engineering projects exploring database modeling, API architecture, authentication, caching, and delivery systems.
 
 ---
 
-## 🏗️ Architecture & Project Structure
+## 📂 Projects
 
-The repository is structured as a monorepo containing both the backend service and the client application:
+### [1. Full-Stack URL Shortener (Project 1)](./project-1-url-shortener)
+- **Tech Stack**: Node.js, Express, React (Vite), Zod, CORS
+- **Core Concepts**: URL hashing, redirect mechanics, REST API design, lightweight client frontend, click analytics.
+- **Documentation**: [Project 1 README](./project-1-url-shortener/README.md)
 
-```text
-.
-├── .gitignore
-├── README.md
-├── client/              # Frontend React application (Vite)
-│   ├── src/
-│   │   ├── App.jsx      # Core UI component & API fetch handlers
-│   │   └── main.jsx
-│   └── package.json
-└── url-shortener/       # Backend REST API (Express + CJS)
-    ├── index.js         # Server, routes, validation middleware, and data store
-    └── package.json
-⚡ Tech Stack
-Backend: Node.js, Express, CommonJS (require)
-
-Validation: Zod (runtime request schema enforcement)
-
-Utilities: Node.js native crypto (secure random byte generation)
-
-Frontend: React 18, Vite
-
-Networking: Fetch API, CORS middleware
-
-🚀 Features
-Link Shortening: Accepts target URLs and returns base64url-encoded 6-character aliases.
-
-Fail-Fast Validation: Zod middleware inspects request payloads and returns detailed error maps on malformed input (HTTP 400).
-
-HTTP 302 Redirections: Direct browser redirection from short link paths (/:code) to destination addresses.
-
-Click Analytics: Records and exposes total click volume and timestamps per generated alias.
-
-Reactive UI: Instant feedback for errors, clickable short link previews, and dedicated stats inspection panels.
-📌 Planned Enhancements
-[ ] Replace the in-memory Map with persistent storage using SQLite (better-sqlite3).
-
-[ ] Add rate limiting via express-rate-limit to prevent denial-of-service abuse.
-
-[ ] Implement custom user-defined alias support.
-
-[ ] Refactor backend structure into standard MVC layers (Controllers, Services, Models).
-
+### [2. Custom Headless CMS Backend with GraphQL & TypeScript (Project 2)](./project-2-headless-cms)
+- **Tech Stack**: Node.js, TypeScript, Fastify, GraphQL Yoga, Prisma ORM, PostgreSQL 16
+- **Core Concepts**:
+  - **Dynamic Content Modeling**: Runtime content types and dynamic schemas backed by PostgreSQL `JsonB` with relational integrity.
+  - **GraphQL Delivery Layer**: Dynamic schema resolvers and **DataLoader** engine to eliminate N+1 database queries.
+  - **Security & RBAC**: Dual-vector authentication with JWT (Admin/Editor) and scoped API Keys (Consumer clients).
+  - **Media Management**: Multipart asset upload pipeline and static asset serving.
+  - **Containerization**: Turnkey `docker-compose.yml` and multi-stage `Dockerfile`.
+- **Documentation**: [Project 2 README](./project-2-headless-cms/README.md)

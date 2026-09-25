@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  CONSUMER
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(EDITOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  entries   Entry[]  @relation("UserEntries")
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  name       String
+  keyHash    String    @unique
+  role       Role      @default(CONSUMER)
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+enum FieldType {
+  STRING
+  TEXT
+  INTEGER
+  FLOAT
+  BOOLEAN
+  DATETIME
+  JSON
+  MEDIA
+  RELATION
+}
+
+enum RelationCardinality {
+  ONE_TO_ONE
+  ONE_TO_MANY
+  MANY_TO_MANY
+}
+
+model ContentType {
+  id          String            @id @default(uuid())
+  name        String
+  slug        String            @unique
+  description String?
+  fields      FieldDefinition[]
+  entries     Entry[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model FieldDefinition {
+  id                  String               @id @default(uuid())
+  contentTypeId       String
+  contentType         ContentType          @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
+  name                String
+  slug                String
+  type                FieldType
+  isRequired          Boolean              @default(false)
+  isUnique            Boolean              @default(false)
+  defaultValue        String?
+  targetContentTypeId String?
+  relationCardinality RelationCardinality?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@unique([contentTypeId, slug])
+}
+
+enum EntryStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Entry {
+  id            String      @id @default(uuid())
+  contentTypeId String
+  contentType   ContentType @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
+  status        EntryStatus @default(DRAFT)
+  data          Json
+  publishedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  createdById   String?
+  createdBy     User?       @relation("UserEntries", fields: [createdById], references: [id], onDelete: SetNull)
+
+  outgoingRelations EntryRelation[] @relation("SourceEntry")
+  incomingRelations EntryRelation[] @relation("TargetEntry")
+  assets            EntryAsset[]
+
+  @@index([contentTypeId, status])
+}
+
+model EntryRelation {
+  id            String   @id @default(uuid())
+  sourceEntryId String
+  sourceEntry   Entry    @relation("SourceEntry", fields: [sourceEntryId], references: [id], onDelete: Cascade)
+  targetEntryId String
+  targetEntry   Entry    @relation("TargetEntry", fields: [targetEntryId], references: [id], onDelete: Cascade)
+  fieldSlug     String
+  createdAt     DateTime @default(now())
+
+  @@index([sourceEntryId, fieldSlug])
+  @@index([targetEntryId])
+}
+
+model Asset {
+  id           String       @id @default(uuid())
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  path         String
+  altText      String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  entries      EntryAsset[]
+}
+
+model EntryAsset {
+  id        String   @id @default(uuid())
+  entryId   String
+  entry     Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  assetId   String
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  fieldSlug String
+  createdAt DateTime @default(now())
+
+  @@index([entryId, fieldSlug])
+  @@index([assetId])
+}

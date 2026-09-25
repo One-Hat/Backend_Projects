@@ -1,5 +1,23 @@
-﻿**/node_modules/
+# Dependencies
+**/node_modules/
 node_modules/
+
+# Environment files
 .env
+**/.env
+!.env.example
+**/!*.env.example
+
+# Build outputs
 dist/
+**/dist/
 client/dist/
+
+# Uploaded media assets
+uploads/
+**/uploads/
+
+# Logs & temp
+*.log
+**/*.log
+.DS_Store
