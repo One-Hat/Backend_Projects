@@ -13,9 +13,11 @@ dist/
 **/dist/
 client/dist/
 
-# Uploaded media assets
+# Uploaded media assets & backups
 uploads/
 **/uploads/
+backups/
+**/backups/
 
 # Logs & temp
 *.log
