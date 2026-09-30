@@ -11,6 +11,7 @@ import { buildGraphQLContext } from './modules/graphql/context.js';
 import { MediaService } from './modules/media/storage.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import { Role } from '@prisma/client';
+import { prisma } from './db/prisma.js';
 
 export async function createServer() {
   const app = Fastify({
@@ -129,12 +130,36 @@ export async function createServer() {
     }
   });
 
-  // Health check endpoint
-  app.get('/health', async () => {
+  // Graceful shutdown hook
+  app.addHook('onClose', async () => {
+    await prisma.$disconnect();
+  });
+
+  // Health check endpoint with live database latency probe
+  app.get('/health', async (req, reply) => {
+    const start = performance.now();
+    let dbStatus = 'connected';
+    let dbLatencyMs = 0;
+
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      dbLatencyMs = Math.round((performance.now() - start) * 100) / 100;
+    } catch (err: any) {
+      dbStatus = 'disconnected';
+      return reply.status(503).send({
+        status: 'degraded',
+        service: 'headless-cms',
+        uptime: process.uptime(),
+        database: { status: dbStatus, error: err.message },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     return {
       status: 'ok',
       service: 'headless-cms',
       uptime: process.uptime(),
+      database: { status: dbStatus, latencyMs: dbLatencyMs },
       timestamp: new Date().toISOString(),
     };
   });
