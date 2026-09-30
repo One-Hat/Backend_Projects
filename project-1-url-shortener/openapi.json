@@ -1,0 +1,81 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "URL Shortener API",
+    "version": "1.0.0",
+    "description": "High-throughput URL shortening service with click analytics and Zod validation."
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "Local Development Server" }
+  ],
+  "paths": {
+    "/api/shorten": {
+      "post": {
+        "summary": "Shorten a target URL",
+        "description": "Generates a 6-character unique base64url alias.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["originalUrl"],
+                "properties": {
+                  "originalUrl": { "type": "string", "format": "uri", "example": "https://example.com" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Short URL created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "success" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "shortCode": { "type": "string", "example": "x7b9A2" },
+                        "shortUrl": { "type": "string", "example": "http://localhost:3000/x7b9A2" },
+                        "originalUrl": { "type": "string", "example": "https://example.com" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error (invalid or missing URL)" }
+        }
+      }
+    },
+    "/api/stats/{code}": {
+      "get": {
+        "summary": "Get click statistics",
+        "parameters": [
+          { "name": "code", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Analytics record" },
+          "404": { "description": "Short code not found" }
+        }
+      }
+    },
+    "/{code}": {
+      "get": {
+        "summary": "Redirect to destination",
+        "parameters": [
+          { "name": "code", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "302": { "description": "HTTP redirect to original URL" },
+          "404": { "description": "Short code not found" }
+        }
+      }
+    }
+  }
+}
