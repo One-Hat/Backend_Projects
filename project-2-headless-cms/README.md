@@ -3,6 +3,7 @@
 A robust, enterprise-grade Headless Content Management System (CMS) backend built with **Node.js, TypeScript, Fastify, GraphQL Yoga, Prisma, and PostgreSQL**.
 
 > 🖥️ **Interactive Pitch Deck**: Check out the [Interactive Presentation](./presentation/index.html) featuring animated page-turn transitions (Left, Top, and Live 3D), live schema demos, and a custom grey & pink UI!
+> 🏛️ **Architecture Deep-Dive**: Read the comprehensive [Architecture Specification](./docs/architecture.md) covering PostgreSQL JSONB modeling, DataLoader mechanics, and security threat models.
 
 ---
 
