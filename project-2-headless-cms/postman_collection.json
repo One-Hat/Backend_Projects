@@ -1,0 +1,93 @@
+{
+  "info": {
+    "name": "Headless CMS GraphQL & REST API",
+    "description": "Production-ready Postman collection for the Custom Headless CMS backend with GraphQL Yoga, Fastify, Prisma, and PostgreSQL.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "jwtToken", "value": "" },
+    { "key": "apiKey", "value": "cms_demo_consumer_api_key_777" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+      }
+    },
+    {
+      "name": "Auth - Login Admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.data && res.data.login) {",
+              "    pm.collectionVariables.set('jwtToken', res.data.login.token);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation Login { login(input: { email: \\\"admin@cms.local\\\", password: \\\"AdminPass123!\\\" }) { token user { id email role } } }\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/graphql", "host": ["{{baseUrl}}"], "path": ["graphql"] }
+      }
+    },
+    {
+      "name": "Schema - Get Content Types",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query GetContentTypes { contentTypes { id name slug entryCount fields { name slug type isRequired } } }\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/graphql", "host": ["{{baseUrl}}"], "path": ["graphql"] }
+      }
+    },
+    {
+      "name": "Delivery - Get Published Entries (via API Key)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-api-key", "value": "{{apiKey}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query GetBlogEntries { entries(contentType: \\\"blog_post\\\") { totalCount items { id status data related(field: \\\"author\\\") { id data } asset(field: \\\"cover_image\\\") { url originalName } } } }\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/graphql", "host": ["{{baseUrl}}"], "path": ["graphql"] }
+      }
+    },
+    {
+      "name": "Media - Upload Asset (Multipart)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "file", "type": "file", "src": [] }
+          ]
+        },
+        "url": { "raw": "{{baseUrl}}/api/upload", "host": ["{{baseUrl}}"], "path": ["api", "upload"] }
+      }
+    }
+  ]
+}

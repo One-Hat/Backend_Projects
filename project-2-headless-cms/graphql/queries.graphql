@@ -1,0 +1,293 @@
+# ==============================================================================
+# Headless CMS GraphQL Operation Catalog
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. AUTHENTICATION & USER MANAGEMENT
+# ------------------------------------------------------------------------------
+
+# Register a new Administrator (first user becomes ADMIN automatically)
+mutation RegisterUser($email: String!, $password: String!, $name: String!, $role: Role) {
+  register(input: { email: $email, password: $password, name: $name, role: $role }) {
+    token
+    user {
+      id
+      email
+      name
+      role
+      createdAt
+    }
+  }
+}
+
+# Login and receive JWT bearer token
+mutation LoginUser($email: String!, $password: String!) {
+  login(input: { email: $email, password: $password }) {
+    token
+    user {
+      id
+      email
+      name
+      role
+    }
+  }
+}
+
+# Fetch currently authenticated user profile
+query GetMe {
+  me {
+    id
+    email
+    name
+    role
+    createdAt
+  }
+}
+
+# ------------------------------------------------------------------------------
+# 2. API KEY MANAGEMENT (Admin Only)
+# ------------------------------------------------------------------------------
+
+# Generate a new scoped API Key for frontend clients (e.g. Next.js, Astro)
+mutation CreateConsumerApiKey($name: String!, $role: Role, $expiresAt: String) {
+  createApiKey(input: { name: $name, role: $role, expiresAt: $expiresAt }) {
+    plainKey
+    apiKey {
+      id
+      name
+      role
+      expiresAt
+      createdAt
+    }
+  }
+}
+
+# List all issued API Keys
+query ListApiKeys {
+  apiKeys {
+    id
+    name
+    role
+    expiresAt
+    lastUsedAt
+    createdAt
+  }
+}
+
+# Revoke an existing API Key
+mutation RevokeApiKey($id: ID!) {
+  revokeApiKey(id: $id)
+}
+
+# ------------------------------------------------------------------------------
+# 3. CONTENT TYPE & SCHEMA ENGINE (Admin Only)
+# ------------------------------------------------------------------------------
+
+# List all dynamically registered content types with field definitions & counts
+query GetContentTypes {
+  contentTypes {
+    id
+    name
+    slug
+    description
+    entryCount
+    fields {
+      id
+      name
+      slug
+      type
+      isRequired
+      isUnique
+      targetContentTypeId
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Create a new dynamic Content Type (e.g. "Author")
+mutation CreateAuthorContentType {
+  createContentType(input: {
+    name: "Author",
+    slug: "author",
+    description: "Content authors and contributors",
+    fields: [
+      { name: "Full Name", slug: "name", type: STRING, isRequired: true },
+      { name: "Bio", slug: "bio", type: TEXT },
+      { name: "Twitter Handle", slug: "twitter", type: STRING }
+    ]
+  }) {
+    id
+    name
+    slug
+    fields {
+      name
+      slug
+      type
+    }
+  }
+}
+
+# Create a dynamic Content Type with relational and media fields (e.g. "Blog Post")
+mutation CreateBlogPostContentType {
+  createContentType(input: {
+    name: "Blog Post",
+    slug: "blog_post",
+    description: "Articles and editorial stories",
+    fields: [
+      { name: "Title", slug: "title", type: STRING, isRequired: true },
+      { name: "Slug", slug: "slug", type: STRING, isRequired: true, isUnique: true },
+      { name: "Content", slug: "content", type: TEXT, isRequired: true },
+      { name: "Read Time", slug: "read_time", type: INTEGER },
+      { name: "Author", slug: "author", type: RELATION, targetContentTypeId: "author" },
+      { name: "Cover Image", slug: "cover_image", type: MEDIA }
+    ]
+  }) {
+    id
+    name
+    slug
+    fields {
+      name
+      slug
+      type
+    }
+  }
+}
+
+# Dynamically add a field to an existing Content Type
+mutation AddFieldToContentType($contentTypeIdOrSlug: String!, $field: CreateFieldInput!) {
+  addField(contentTypeIdOrSlug: $contentTypeIdOrSlug, field: $field) {
+    id
+    name
+    slug
+    type
+    isRequired
+  }
+}
+
+# ------------------------------------------------------------------------------
+# 4. CONTENT ENTRY MANAGEMENT (Admin & Editor)
+# ------------------------------------------------------------------------------
+
+# Create an Author entry
+mutation CreateAuthorEntry {
+  createEntry(input: {
+    contentType: "author",
+    data: {
+      name: "Ada Lovelace",
+      bio: "Mathematician and computer science visionary.",
+      twitter: "@adalovelace"
+    },
+    status: PUBLISHED
+  }) {
+    id
+    status
+    data
+  }
+}
+
+# Create a Blog Post entry linked to an Author and Asset
+mutation CreateBlogPostEntry($authorId: String!, $assetId: String) {
+  createEntry(input: {
+    contentType: "blog_post",
+    data: {
+      title: "Mastering Headless CMS with GraphQL Yoga and Fastify",
+      slug: "mastering-headless-cms-graphql",
+      content: "Decoupling your presentation layer from the database storage model...",
+      read_time: 6
+    },
+    status: PUBLISHED,
+    relations: [
+      { fieldSlug: "author", targetEntryId: $authorId }
+    ],
+    assets: [
+      { fieldSlug: "cover_image", assetId: $assetId }
+    ]
+  }) {
+    id
+    status
+    data
+    publishedAt
+    related(field: "author") {
+      id
+      data
+    }
+  }
+}
+
+# Publish a draft entry
+mutation PublishContentEntry($id: ID!) {
+  publishEntry(id: $id) {
+    id
+    status
+    publishedAt
+  }
+}
+
+# Unpublish an entry back to draft
+mutation UnpublishContentEntry($id: ID!) {
+  unpublishEntry(id: $id) {
+    id
+    status
+  }
+}
+
+# Delete an entry
+mutation DeleteContentEntry($id: ID!) {
+  deleteEntry(id: $id)
+}
+
+# ------------------------------------------------------------------------------
+# 5. CONTENT DELIVERY (Consumers with x-api-key or JWT)
+# ------------------------------------------------------------------------------
+
+# Fetch published entries with batched relational resolution (Zero N+1 traps via DataLoader)
+query GetPublishedBlogPosts($page: Int, $limit: Int) {
+  entries(
+    contentType: "blog_post",
+    pagination: { page: $page, limit: $limit }
+  ) {
+    totalCount
+    page
+    limit
+    totalPages
+    hasNextPage
+    hasPrevPage
+    items {
+      id
+      status
+      data
+      publishedAt
+      createdAt
+      related(field: "author") {
+        id
+        data
+      }
+      asset(field: "cover_image") {
+        id
+        url
+        altText
+        mimeType
+        size
+      }
+    }
+  }
+}
+
+# Fetch single entry by ID
+query GetSingleEntry($id: ID!) {
+  entry(id: $id) {
+    id
+    status
+    data
+    publishedAt
+    related(field: "author") {
+      id
+      data
+    }
+    asset(field: "cover_image") {
+      url
+      altText
+    }
+  }
+}
