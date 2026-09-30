@@ -29,8 +29,16 @@ async function runTests() {
   console.log('🧪 Running Project 1 (URL Shortener) Integration Tests...\n');
 
   try {
-    // Test 1: Shorten URL
-    console.log('🔹 Test 1: POST /api/shorten with valid URL');
+    // Test 1: Health check
+    console.log('🔹 Test 1: GET /health');
+    const healthRes = await request('/health', { method: 'GET' });
+    if (healthRes.statusCode !== 200 || healthRes.body.status !== 'ok') {
+      throw new Error(`Health check failed: ${healthRes.statusCode}`);
+    }
+    console.log('   ✅ Health check passed (status: ok)\n');
+
+    // Test 2: Shorten URL (Standard)
+    console.log('🔹 Test 2: POST /api/shorten with valid URL');
     const shortenRes = await request('/api/shorten', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -42,8 +50,32 @@ async function runTests() {
     const shortCode = shortenRes.body.data.shortCode;
     console.log(`   ✅ URL shortened successfully! Code: ${shortCode}\n`);
 
-    // Test 2: Validation rejection
-    console.log('🔹 Test 2: POST /api/shorten with invalid URL schema');
+    // Test 3: Shorten URL with Custom Code
+    console.log('🔹 Test 3: POST /api/shorten with custom alias');
+    const customRes = await request('/api/shorten', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, { originalUrl: 'https://github.com', customCode: 'github-portfolio' });
+
+    if (customRes.statusCode !== 201 || customRes.body.data.shortCode !== 'github-portfolio') {
+      throw new Error(`Expected custom alias, got ${JSON.stringify(customRes.body)}`);
+    }
+    console.log('   ✅ Custom alias registered: "github-portfolio"\n');
+
+    // Test 4: Duplicate Custom Code Conflict (409)
+    console.log('🔹 Test 4: Reject duplicate custom alias (HTTP 409)');
+    const conflictRes = await request('/api/shorten', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, { originalUrl: 'https://google.com', customCode: 'github-portfolio' });
+
+    if (conflictRes.statusCode !== 409) {
+      throw new Error(`Expected 409 Conflict, got ${conflictRes.statusCode}`);
+    }
+    console.log('   ✅ Duplicate alias correctly rejected with HTTP 409\n');
+
+    // Test 5: Validation rejection
+    console.log('🔹 Test 5: POST /api/shorten with invalid URL schema');
     const invalidRes = await request('/api/shorten', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
