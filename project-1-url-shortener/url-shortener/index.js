@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');// this is a built in node module that allows us to generate random strings
 const z = require('zod'); // this is a schema validation library - mtaches correct data formtas (int , char etc)
 const cors = require('cors'); // this is a middleware that allows us to enable CORS (Cross-Origin Resource Sharing) for our API. This is useful for allowing our API to be accessed from different domains.
+const { rateLimiter } = require('./rateLimiter');
 
 const app = express();
 app.use(cors());
@@ -43,7 +44,7 @@ app.get('/health', (req, res) => {
 });
 
 // Route Handlers
-app.post('/api/shorten', validate(createUrlSchema), (req, res) => {
+app.post('/api/shorten', rateLimiter({ maxRequests: 100 }), validate(createUrlSchema), (req, res) => {
     const { originalUrl, customCode, expiresInHours } = req.body;
 
     let shortCode = customCode;
