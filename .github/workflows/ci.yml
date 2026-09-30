@@ -1,0 +1,53 @@
+name: Backend Projects CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-project-1:
+    name: Test URL Shortener
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Dependencies
+        run: |
+          cd project-1-url-shortener/url-shortener
+          npm ci || npm install
+      - name: Verify Startup & Syntax
+        run: |
+          cd project-1-url-shortener/url-shortener
+          node -c index.js
+
+  build-and-verify-project-2:
+    name: Verify Headless CMS & Presentation Deck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 1. Verify Backend TypeScript Compilation & Prisma Types
+      - name: Install CMS Dependencies & Typecheck
+        run: |
+          cd project-2-headless-cms
+          npm ci || npm install
+          npx prisma generate
+          npx tsc --noEmit
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/headless_cms"
+
+      # 2. Build React + Tailwind Presentation Deck
+      - name: Build React + Tailwind Presentation
+        run: |
+          cd project-2-headless-cms/presentation
+          npm ci || npm install
+          npm run build
